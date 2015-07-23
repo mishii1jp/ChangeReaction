@@ -5,22 +5,36 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 
 import java.io.Console;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainActivity extends Activity {
 
+    private List<String> uuidArray = new ArrayList<String>();
+    ArrayAdapter<String> adapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Intent intent = new Intent(MainActivity.this, BeaconService.class);
+        startService(intent);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Button getBeaconBtn = (Button) this.findViewById(R.id.getBeaconBtn);
+        uuidArray = new ArrayList<String>();
+        final ListView uuidList = (ListView) this.findViewById(R.id.uuidListView);
+		adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
+
         getBeaconBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -30,50 +44,52 @@ public class MainActivity extends Activity {
                     @Override
                     public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
                         if (scanRecord.length > 30) {
-                            if((scanRecord[5] == (byte)0x4c) && (scanRecord[6] == (byte)0x00) && (scanRecord[7] == (byte)0x02) && (scanRecord[8] == (byte)0x15)) {
-                                String uuid = IntToHex2(scanRecord[9] & 0xff)
-                                        + IntToHex2(scanRecord[10] & 0xff)
-                                        + IntToHex2(scanRecord[11] & 0xff)
-                                        + IntToHex2(scanRecord[12] & 0xff)
+                            if ((scanRecord[5] == (byte) 0x4c) && (scanRecord[6] == (byte) 0x00) && (scanRecord[7] == (byte) 0x02) && (scanRecord[8] == (byte) 0x15)) {
+                                String uuid = UtilityCommons.IntToHex2(scanRecord[9] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[10] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[11] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[12] & 0xff)
                                         + "-"
-                                        + IntToHex2(scanRecord[13] & 0xff)
-                                        + IntToHex2(scanRecord[14] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[13] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[14] & 0xff)
                                         + "-"
-                                        + IntToHex2(scanRecord[15] & 0xff)
-                                        + IntToHex2(scanRecord[16] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[15] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[16] & 0xff)
                                         + "-"
-                                        + IntToHex2(scanRecord[17] & 0xff)
-                                        + IntToHex2(scanRecord[18] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[17] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[18] & 0xff)
                                         + "-"
-                                        + IntToHex2(scanRecord[19] & 0xff)
-                                        + IntToHex2(scanRecord[20] & 0xff)
-                                        + IntToHex2(scanRecord[21] & 0xff)
-                                        + IntToHex2(scanRecord[22] & 0xff)
-                                        + IntToHex2(scanRecord[23] & 0xff)
-                                        + IntToHex2(scanRecord[24] & 0xff);
+                                        + UtilityCommons.IntToHex2(scanRecord[19] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[20] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[21] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[22] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[23] & 0xff)
+                                        + UtilityCommons.IntToHex2(scanRecord[24] & 0xff);
 
-                                String major = IntToHex2(scanRecord[25] & 0xff) + IntToHex2(scanRecord[26] & 0xff);
-                                String minor = IntToHex2(scanRecord[27] & 0xff) + IntToHex2(scanRecord[28] & 0xff);
-
-                                System.out.println(uuid);
-                                System.out.println(major);
-                                System.out.println(minor);
-
+//                                String major = IntToHex2(scanRecord[25] & 0xff) + IntToHex2(scanRecord[26] & 0xff);
+//                                String minor = IntToHex2(scanRecord[27] & 0xff) + IntToHex2(scanRecord[28] & 0xff);
+                                uuidArray.add(uuid);
                             }
                         }
                     }
                 };
                 mBluetoothAdapter.startLeScan(mLeScanCallback);
                 try {
-                    Thread.sleep(2000);
+                    Thread.sleep(5000);
                 } catch (InterruptedException ex) {
                     ex.printStackTrace();
                 }
 
                 mBluetoothAdapter.stopLeScan(mLeScanCallback);
-
+                if (uuidArray.size() != 0) {
+                    for (String s : uuidArray) {
+                        adapter.add(s);
+                    }
+                }
+                uuidList.setAdapter(adapter);
             }
         });
+
     }
 
     @Override
@@ -96,12 +112,6 @@ public class MainActivity extends Activity {
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    public String IntToHex2(int i) {
-        char hex_2[] = {Character.forDigit((i>>4) & 0x0f,16),Character.forDigit(i&0x0f, 16)};
-        String hex_2_str = new String(hex_2);
-        return hex_2_str.toUpperCase();
     }
 
 }
