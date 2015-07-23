@@ -2,7 +2,6 @@ package com.example.changereaction.changereaction;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
@@ -14,28 +13,36 @@ import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
 /**
+ * Beacon情報収集・送信サービス
  * Created by ishiimao on 15/07/11.
  */
 public class BeaconService extends Service implements LocationListener {
 
 	//LocationManager
-	LocationManager locationManager;
+	private LocationManager locationManager;
 	//Timer
-	Timer timer;
+	private Timer timer;
 	//uuid
-	String uuid;
+	private String uuid;
 	//uuid取得時間
-	String nowtime;
+	private String nowtime;
 	//経度
-	double longitude;
+	private double longitude;
 	//緯度
-	double latitude;
+	private double latitude;
+	//TODO URL
+	private static final String url = "";
 
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -45,7 +52,7 @@ public class BeaconService extends Service implements LocationListener {
 	@Override
 	public void onCreate() {
 		locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-		Log.d("changereaction","BeaconSearchService_Start");
+		Log.i("beaconsample","BeaconSearchService_Create");
 		Toast.makeText(this, "BeaconSearchService_Start", Toast.LENGTH_SHORT).show();
 	}
 
@@ -60,11 +67,13 @@ public class BeaconService extends Service implements LocationListener {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		Log.i("beaconsample","BeaconSearchService_Start");
 		//super.onStartCommand(intent, flags, startId);
 		//位置情報の取得設定
 		if (locationManager != null) {
 			locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,getInterval(),50, this);
 		}
+		//指定された間隔でbeaco情報を送信する
 		timer = new Timer();
 		timer.schedule(new TimerTask() {
 			@Override
@@ -79,19 +88,24 @@ public class BeaconService extends Service implements LocationListener {
 				Log.i("beaconSample","latitude:"+ String.valueOf(latitude));
 				Log.i("beaconSample","longtitude:"+ String.valueOf(longitude));
 				Log.i("beaconSample","nowtime:"+ nowtime);
-
+				//情報の送信
+				postData();
 
 			}
 		}, 0, getInterval());
+
 
 		return START_STICKY;
 	}
 
 	@Override
 	public void onDestroy() {
+		Log.i("beaconsample","BeaconSearchService_Destroy");
 		if (locationManager != null) {
 			locationManager.removeUpdates(this);
 		}
+		//Service開始時に仕込まれたtimerのキャンセル
+		timer.cancel();
 	}
 
 	/**
@@ -113,6 +127,33 @@ public class BeaconService extends Service implements LocationListener {
 		//スキャン停止
 		mBluetoothAdapter.stopLeScan(mLeScanCallback);
 		return mLeScanCallback.getUuid();
+	}
+
+	/**
+	 * beacon情報の送信処理
+	 */
+	private void postData() {
+		try {
+			URL urlObj = new URL(url);
+			HttpURLConnection hc = (HttpURLConnection) urlObj.openConnection();
+			hc.setDoOutput(true);
+			hc.setRequestMethod("POST");
+			//TODO POSTParameter
+			String postParam = "";
+			//POSTデータ設定
+			PrintStream ps = new PrintStream(hc.getOutputStream());
+			ps.print(postParam);
+			ps.close();
+			//resuestの送信
+			hc.connect();
+
+		} catch (MalformedURLException e) {
+			System.err.println("Invalid URL format: " + url);
+
+		} catch (IOException e) {
+			System.err.println("Can't connect to " + url);
+
+		}
 	}
 
 

@@ -6,6 +6,10 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,82 +18,55 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.gcm.GoogleCloudMessaging;
+
 import java.io.Console;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class MainActivity extends Activity {
 
-    private List<String> uuidArray = new ArrayList<String>();
-    ArrayAdapter<String> adapter;
+    /** Google Cloud Messagingオブジェクト */
+    private GoogleCloudMessaging gcm;
+    /** コンテキスト */
+    private Context context;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Intent intent = new Intent(MainActivity.this, BeaconService.class);
-        startService(intent);
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Button getBeaconBtn = (Button) this.findViewById(R.id.getBeaconBtn);
-        uuidArray = new ArrayList<String>();
-        final ListView uuidList = (ListView) this.findViewById(R.id.uuidListView);
-		adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
-
+        //Intent生成
+        final Intent intent = new Intent(MainActivity.this, BeaconService.class);
+        //Service 開始ボタン押下
         getBeaconBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-                BluetoothAdapter mBluetoothAdapter = bluetoothManager.getAdapter();
-                BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
-                    @Override
-                    public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-                        if (scanRecord.length > 30) {
-                            if ((scanRecord[5] == (byte) 0x4c) && (scanRecord[6] == (byte) 0x00) && (scanRecord[7] == (byte) 0x02) && (scanRecord[8] == (byte) 0x15)) {
-                                String uuid = UtilityCommons.IntToHex2(scanRecord[9] & 0xff)
-                                        + UtilityCommons.IntToHex2(scanRecord[10] & 0xff)
-                                        + UtilityCommons.IntToHex2(scanRecord[11] & 0xff)
-                                        + UtilityCommons.IntToHex2(scanRecord[12] & 0xff)
-                                        + "-"
-                                        + UtilityCommons.IntToHex2(scanRecord[13] & 0xff)
-                                        + UtilityCommons.IntToHex2(scanRecord[14] & 0xff)
-                                        + "-"
-                                        + UtilityCommons.IntToHex2(scanRecord[15] & 0xff)
-                                        + UtilityCommons.IntToHex2(scanRecord[16] & 0xff)
-                                        + "-"
-                                        + UtilityCommons.IntToHex2(scanRecord[17] & 0xff)
-                                        + UtilityCommons.IntToHex2(scanRecord[18] & 0xff)
-                                        + "-"
-                                        + UtilityCommons.IntToHex2(scanRecord[19] & 0xff)
-                                        + UtilityCommons.IntToHex2(scanRecord[20] & 0xff)
-                                        + UtilityCommons.IntToHex2(scanRecord[21] & 0xff)
-                                        + UtilityCommons.IntToHex2(scanRecord[22] & 0xff)
-                                        + UtilityCommons.IntToHex2(scanRecord[23] & 0xff)
-                                        + UtilityCommons.IntToHex2(scanRecord[24] & 0xff);
+                //サービス開始
 
-//                                String major = IntToHex2(scanRecord[25] & 0xff) + IntToHex2(scanRecord[26] & 0xff);
-//                                String minor = IntToHex2(scanRecord[27] & 0xff) + IntToHex2(scanRecord[28] & 0xff);
-                                uuidArray.add(uuid);
-                            }
-                        }
-                    }
-                };
-                mBluetoothAdapter.startLeScan(mLeScanCallback);
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
-                }
+                startService(intent);
 
-                mBluetoothAdapter.stopLeScan(mLeScanCallback);
-                if (uuidArray.size() != 0) {
-                    for (String s : uuidArray) {
-                        adapter.add(s);
-                    }
-                }
-                uuidList.setAdapter(adapter);
+            }
+        });
+        //Service 停止ボタン押下
+        Button stopBeaconBtn = (Button) this.findViewById(R.id.stopBeaconBtn);
+        stopBeaconBtn.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                stopService(intent);
             }
         });
 
+        //GCM
+        context = getApplicationContext();
+        gcm = GoogleCloudMessaging.getInstance(this);
+        registerInBackground();
     }
 
     @Override
@@ -112,6 +89,29 @@ public class MainActivity extends Activity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void registerInBackground() {
+        new AsyncTask<Void, Void, String>() {
+            @Override
+            protected String doInBackground(Void... params) {
+                String msg = "";
+                try {
+                    if (gcm == null) {
+                        gcm = GoogleCloudMessaging.getInstance(context);
+                    }
+                    String regid = gcm.register("138680713473");
+                    msg = "Device registered, registration ID=" + regid;
+                } catch (IOException ex) {
+                    msg = "Error :" + ex.getMessage();
+                }
+                return msg;
+            }
+
+            @Override
+            protected void onPostExecute(String msg) {
+            }
+        }.execute(null, null, null);
     }
 
 }
