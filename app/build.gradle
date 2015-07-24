@@ -23,5 +23,10 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:22.2.0'
-    compile "com.google.android.gms:play-services:7.5.+"
+    compile 'com.google.android.gms:play-services:7.5.+'
+    compile files('libs/ibmbluemix.jar')
+    compile files('libs/ibmdata.jar')
+    compile files('libs/ibmfilesync.jar')
+    compile files('libs/ibmcloudcode.jar')
+    compile files('libs/ibmpush.jar')
 }

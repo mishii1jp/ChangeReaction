@@ -14,10 +14,12 @@ import android.util.Log;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Timer;
@@ -42,7 +44,7 @@ public class BeaconService extends Service implements LocationListener {
 	//緯度
 	private double latitude;
 	//TODO URL
-	private static final String url = "";
+	private static final String url = "http://bluemixmoumuri.mybluemix.net/contact";
 
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -89,8 +91,9 @@ public class BeaconService extends Service implements LocationListener {
 				Log.i("beaconSample","longtitude:"+ String.valueOf(longitude));
 				Log.i("beaconSample","nowtime:"+ nowtime);
 				//情報の送信
-				postData();
-
+				if (uuid != null) {
+					postData();
+				}
 			}
 		}, 0, getInterval());
 
@@ -134,25 +137,35 @@ public class BeaconService extends Service implements LocationListener {
 	 */
 	private void postData() {
 		try {
+//			HttpURLConnection sampleCon = (HttpURLConnection) new URL("http://bluemixmoumuri.mybluemix.net/contact").openConnection();
+//			sampleCon.setRequestMethod("GET");
+//			sampleCon.connect();
+//			int rs = sampleCon.getResponseCode();
+//			Log.i("beaconsample","sampleGet...result:" + String.valueOf(rs));
+
+			Log.i("beaconsample", "GetRequest");
+//			String param = "uuid=" + uuid; //+ "&long=" + String.valueOf(longitude)
+//					//+ "&lat=" + String.valueOf(latitude);//+ "&nowtime=" + URLEncoder.encode(nowtime, "utf-8")
+			Log.i("beaconsample","url:" + url);
 			URL urlObj = new URL(url);
 			HttpURLConnection hc = (HttpURLConnection) urlObj.openConnection();
-			hc.setDoOutput(true);
-			hc.setRequestMethod("POST");
-			//TODO POSTParameter
-			String postParam = "";
-			//POSTデータ設定
-			PrintStream ps = new PrintStream(hc.getOutputStream());
-			ps.print(postParam);
-			ps.close();
+			hc.setRequestProperty("uuid",uuid);
+			hc.setRequestProperty("long",String.valueOf(longitude));
+			hc.setRequestProperty("lat",String.valueOf(latitude));
+			hc.setRequestProperty("nowtime",nowtime);
+//			hc.setRequestProperty("Accept-Charset", "utf-8");
+//			hc.setDoOutput(true);
+			hc.setRequestMethod("GET");
 			//resuestの送信
 			hc.connect();
+			int resultCd = hc.getResponseCode();
+			Log.i("beaconsample","ResponseCode:" + String.valueOf(resultCd));
 
 		} catch (MalformedURLException e) {
-			System.err.println("Invalid URL format: " + url);
+			Log.e("beaconsample", "Invalid URL format:" + url);
 
 		} catch (IOException e) {
-			System.err.println("Can't connect to " + url);
-
+			Log.e("beaconsample", "Can't connect to" + url);
 		}
 	}
 
