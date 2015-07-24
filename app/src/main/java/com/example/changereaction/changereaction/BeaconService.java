@@ -84,7 +84,7 @@ public class BeaconService extends Service implements LocationListener {
 				uuid = getBeaconInfo();
 				//時間の取得
 				Date date = new Date();
-				SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
+				SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");//"yyyy/MM/dd HH:mm:ss"
 				nowtime = format.format(date);
 				Log.i("beaconSample","uuid:"+ uuid);
 				Log.i("beaconSample","latitude:"+ String.valueOf(latitude));
@@ -144,10 +144,11 @@ public class BeaconService extends Service implements LocationListener {
 //			Log.i("beaconsample","sampleGet...result:" + String.valueOf(rs));
 
 			Log.i("beaconsample", "GetRequest");
-//			String param = "uuid=" + uuid; //+ "&long=" + String.valueOf(longitude)
-//					//+ "&lat=" + String.valueOf(latitude);//+ "&nowtime=" + URLEncoder.encode(nowtime, "utf-8")
-			Log.i("beaconsample","url:" + url);
-			URL urlObj = new URL(url);
+
+			String param = "uuid=" + uuid + "&long=" + String.valueOf(longitude)
+					+ "&lat=" + String.valueOf(latitude) + "&nowtime=" + nowtime.replace(" ","%20");
+			Log.i("beaconsample","url:" + url + "?" + param);
+			URL urlObj = new URL(url + "?" + param);
 			HttpURLConnection hc = (HttpURLConnection) urlObj.openConnection();
 			hc.setRequestProperty("uuid",uuid);
 			hc.setRequestProperty("long",String.valueOf(longitude));
